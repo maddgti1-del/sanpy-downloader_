@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sanpy Downloader — TikTok, Instagram & YouTube</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1B2B;
+    --paper:#F7F5F0;
+    --paper-dim:#ECE9E1;
+    --signal:#FF5A36;
+    --signal-dark:#E14E2D;
+    --success:#2FA37A;
+    --neutral:#8891A3;
+    --line: rgba(15,27,43,0.12);
+    --tiktok:#1E1E24;
+    --ig:#D6336C;
+    --yt:#D62F2F;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    -webkit-font-smoothing:antialiased;
+  }
+  .noise{
+    position:fixed; inset:0; pointer-events:none; opacity:0.035; z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  header{
+    width:100%;
+    max-width:720px;
+    padding:48px 24px 8px;
+    position:relative;
+    z-index:1;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .brand-mark{
+    width:34px;height:34px;
+    border-radius:8px;
+    background:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:-0.01em;
+  }
+  .brand-name span{color:var(--signal);}
+
+  main{
+    width:100%;
+    max-width:720px;
+    padding:28px 24px 80px;
+    position:relative;
+    z-index:1;
+  }
+  .hero-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--neutral);
+    margin:0 0 14px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(32px,6vw,46px);
+    line-height:1.05;
+    letter-spacing:-0.02em;
+    margin:0 0 14px;
+    font-weight:700;
+  }
+  .sub{
+    font-size:16px;
+    line-height:1.55;
+    color:#3A4658;
+    max-width:52ch;
+    margin:0 0 36px;
+  }
+
+  .url-card{
+    background:#fff;
+    border:1.5px solid var(--line);
+    border-radius:16px;
+    padding:6px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:0 1px 2px rgba(15,27,43,0.04);
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .url-card:focus-within{
+    border-color:var(--ink);
+    box-shadow:0 0 0 3px rgba(15,27,43,0.08);
+  }
+  .platform-badge{
+    flex-shrink:0;
+    width:38px;height:38px;
+    border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:16px;
+    background:var(--paper-dim);
+    color:var(--neutral);
+    margin-left:6px;
+    transition:background .2s ease, color .2s ease, transform .2s ease;
+  }
+  .platform-badge.active{transform:scale(1.02);}
+  .platform-badge[data-platform="tiktok"].active{background:var(--tiktok); color:#fff;}
+  .platform-badge[data-platform="instagram"].active{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888); color:#fff;}
+  .platform-badge[data-platform="youtube"].active{background:var(--yt); color:#fff;}
+
+  #url-input{
+    flex:1;
+    border:none;
+    outline:none;
+    background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    padding:12px 4px;
+    color:var(--ink);
+    min-width:0;
+  }
+  #url-input::placeholder{color:#AAB2C0;}
+
+  .paste-btn{
+    flex-shrink:0;
+    border:none;
+    background:var(--paper-dim);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .paste-btn:hover{background:#DFDCD2;}
+
+  .status-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    margin:12px 2px 0;
+    min-height:18px;
+    color:var(--neutral);
+  }
+  .status-line.error{color:#C43B2D;}
+  .status-line.ok{color:var(--success);}
+
+  .formats{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:10px;
+    margin-top:22px;
+  }
+  .fmt-btn{
+    border:1.5px solid var(--line);
+    background:#fff;
+    border-radius:12px;
+    padding:16px 10px;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s ease, transform .1s ease, background .15s ease;
+    position:relative;
+    overflow:hidden;
+  }
+  .fmt-btn:hover:not(:disabled){border-color:var(--ink); transform:translateY(-1px);}
+  .fmt-btn:active:not(:disabled){transform:translateY(0);}
+  .fmt-btn:disabled{opacity:0.45; cursor:not-allowed;}
+  .fmt-btn .icon{font-size:20px;}
+  .fmt-btn .label{font-weight:700; font-size:13.5px;}
+  .fmt-btn .detail{font-size:11px; color:var(--neutral); font-family:'JetBrains Mono',monospace;}
+  .fmt-btn.primary{background:var(--ink);}
+  .fmt-btn.primary .label{color:#fff;}
+  .fmt-btn.primary .detail{color:#AEB6C4;}
+  .fmt-btn.primary:hover:not(:disabled){background:#182A42;}
+
+  .fmt-btn .spinner{
+    display:none;
+    width:16px;height:16px;
+    border:2px solid rgba(0,0,0,0.15);
+    border-top-color:var(--signal);
+    border-radius:50%;
+    animation:spin 0.7s linear infinite;
+  }
+  .fmt-btn.primary .spinner{border-color:rgba(255,255,255,0.25); border-top-color:var(--signal);}
+  .fmt-btn.loading .icon{display:none;}
+  .fmt-btn.loading .spinner{display:block;}
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .result-card{
+    margin-top:20px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    border-radius:16px;
+    padding:18px;
+    display:none;
+    animation:rise .25s ease;
+  }
+  .result-card.show{display:flex; gap:14px; align-items:center;}
+  @keyframes rise{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .result-thumb{
+    width:64px;height:64px;
+    border-radius:10px;
+    object-fit:cover;
+    background:var(--paper-dim);
+    flex-shrink:0;
+  }
+  .result-info{flex:1; min-width:0;}
+  .result-title{font-weight:600; font-size:14px; margin:0 0 4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .result-meta{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--neutral); margin:0;}
+  .result-dl{
+    flex-shrink:0;
+    background:var(--signal);
+    color:#fff;
+    text-decoration:none;
+    font-weight:700;
+    font-size:13px;
+    padding:10px 16px;
+    border-radius:10px;
+    transition:background .15s ease;
+  }
+  .result-dl:hover{background:var(--signal-dark);}
+
+  .howto{
+    margin-top:56px;
+    border-top:1px solid var(--line);
+    padding-top:32px;
+  }
+  .howto-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--neutral);
+    margin:0 0 18px;
+  }
+  .steps{
+    display:grid;
+    gap:14px;
+  }
+  .step{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+  }
+  .step-num{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    color:var(--signal);
+    width:24px;
+    flex-shrink:0;
+  }
+  .step-text{font-size:14px; line-height:1.5; color:#3A4658;}
+  .step-text b{color:var(--ink);}
+
+  .setup-note{
+    margin-top:40px;
+    background:var(--paper-dim);
+    border-radius:14px;
+    padding:18px 20px;
+    font-size:13px;
+    line-height:1.6;
+    color:#3A4658;
+  }
+  .setup-note b{color:var(--ink);}
+  .setup-note code{
+    background:#fff;
+    border:1px solid var(--line);
+    padding:1px 6px;
+    border-radius:5px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+  }
+
+  footer{
+    width:100%;
+    text-align:center;
+    padding:24px;
+    font-size:12px;
+    color:var(--neutral);
+    font-family:'JetBrains Mono',monospace;
+    position:relative;
+    z-index:1;
+  }
+
+  @media (max-width:480px){
+    .formats{grid-template-columns:1fr 1fr;}
+    .formats .fmt-btn:last-child{grid-column:1 / -1;}
+  }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3V15M12 15L7 10M12 15L17 10" stroke="#F7F5F0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 19H19" stroke="#FF5A36" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="brand-name">Sanpy<span>downloader</span></div>
+  </div>
+</header>
+
+<main>
+  <p class="hero-eyebrow">tempel link → pilih format → selesai</p>
+  <h1>Satu link, tiga cara membawanya pulang.</h1>
+  <p class="sub">Tempel link dari TikTok, Instagram, atau YouTube. Sanpy mengenali platformnya otomatis, lalu siapkan file dalam MP4, MP4 HD, atau MP3.</p>
+
+  <div class="url-card">
+    <div class="platform-badge" id="platform-badge" data-platform="">🔗</div>
+    <input id="url-input" type="text" placeholder="Tempel link postingan di sini…" autocomplete="off" spellcheck="false">
+    <button class="paste-btn" id="paste-btn">Tempel</button>
+  </div>
+  <p class="status-line" id="status-line">Menunggu link.</p>
+
+  <div class="formats">
+    <button class="fmt-btn primary" id="btn-mp4" data-fmt="mp4" data-quality="480p" disabled>
+      <span class="icon">▶</span>
+      <span class="spinner"></span>
+      <span class="label">MP4</span>
+      <span class="detail">kualitas standar</span>
+    </button>
+    <button class="fmt-btn" id="btn-mp4hd" data-fmt="mp4" data-quality="1080p" disabled>
+      <span class="icon">◆</span>
+      <span class="spinner"></span>
+      <span class="label">MP4 HD</span>
+      <span class="detail">kualitas tinggi</span>
+    </button>
+    <button class="fmt-btn" id="btn-mp3" data-fmt="mp3" data-quality="" disabled>
+      <span class="icon">♪</span>
+      <span class="spinner"></span>
+      <span class="label">MP3</span>
+      <span class="detail">audio saja</span>
+    </button>
+  </div>
+
+  <div class="result-card" id="result-card">
+    <img class="result-thumb" id="result-thumb" src="" alt="">
+    <div class="result-info">
+      <p class="result-title" id="result-title">—</p>
+      <p class="result-meta" id="result-meta">—</p>
+    </div>
+    <a class="result-dl" id="result-dl" href="#" target="_blank" rel="noopener">Unduh file</a>
+  </div>
+
+  <div class="howto">
+    <p class="howto-title">Cara pakai</p>
+    <div class="steps">
+      <div class="step">
+        <span class="step-num">01</span>
+        <span class="step-text">Buka postingan TikTok, Instagram, atau YouTube yang ingin diunduh, lalu <b>salin link-nya</b>.</span>
+      </div>
+      <div class="step">
+        <span class="step-num">02</span>
+        <span class="step-text">Tempel link itu ke kotak di atas. Sanpy akan <b>mengenali platformnya otomatis</b>.</span>
+      </div>
+      <div class="step">
+        <span class="step-num">03</span>
+        <span class="step-text">Klik <b>MP4</b>, <b>MP4 HD</b>, atau <b>MP3</b> sesuai kebutuhan, tunggu sebentar, lalu unduh filenya.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="setup-note" id="setup-note" style="display:none;">
+    <b>Server belum dikonfigurasi.</b> Admin situs perlu mengisi <code>SOCIALKIT_ACCESS_KEY</code> di file <code>.env</code> pada server, lalu menjalankan ulang servernya. Lihat <code>README.md</code> untuk panduan lengkap.
+  </div>
+</main>
+
+<footer>Sanpy Downloader · gunakan untuk konten yang berhak Anda unduh</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
