@@ -63,20 +63,59 @@ function detectPlatform(url) {
   return null;
 }
 
+// Link pendek (mis. vt.tiktok.com/xxxx, vm.tiktok.com/xxxx) perlu
+// "dibentangkan" dulu jadi link penuh sebelum dikirim ke SocialKit,
+// karena beberapa provider API tidak bisa membaca link pendek.
+const SHORT_LINK_HOSTS = ["vt.tiktok.com", "vm.tiktok.com", "instagram.com/reel", "youtu.be"];
+
+function looksShortened(url) {
+  const u = url.toLowerCase();
+  return (
+    u.includes("vt.tiktok.com") ||
+    u.includes("vm.tiktok.com") ||
+    u.includes("youtu.be")
+  );
+}
+
+async function resolveShortLink(url) {
+  if (!looksShortened(url)) return url;
+  try {
+    // "manual" redirect supaya kita bisa baca header Location tanpa
+    // ikut mengunduh isi halaman tujuannya.
+    const res = await fetch(url, { method: "GET", redirect: "manual" });
+    const location = res.headers.get("location");
+    if (location) {
+      // Beberapa link redirect berlapis (pendek -> pendek -> panjang),
+      // jadi kita telusuri sekali lagi kalau hasilnya masih pendek.
+      if (looksShortened(location)) {
+        return await resolveShortLink(location);
+      }
+      return location;
+    }
+    return url;
+  } catch (err) {
+    console.warn("Gagal membentangkan link pendek, memakai link asli:", err.message);
+    return url;
+  }
+}
+
 /**
  * POST /api/download
  * body: { url: string, format: "mp4" | "mp3", quality?: string }
  */
 app.post("/api/download", downloadLimiter, async (req, res) => {
   try {
-    const { url, format, quality } = req.body || {};
+    const { url: rawUrl, format, quality } = req.body || {};
 
-    if (!url || typeof url !== "string") {
+    if (!rawUrl || typeof rawUrl !== "string") {
       return res.status(400).json({ success: false, message: "Link tidak boleh kosong." });
     }
     if (!["mp4", "mp3"].includes(format)) {
       return res.status(400).json({ success: false, message: "Format harus mp4 atau mp3." });
     }
+
+    // Bentangkan dulu kalau ini link pendek (vt.tiktok.com, vm.tiktok.com, youtu.be)
+    const url = await resolveShortLink(rawUrl.trim());
 
     const platform = detectPlatform(url);
     if (!platform) {
